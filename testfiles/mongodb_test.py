@@ -11,7 +11,7 @@ from pymongo import MongoClient
 @pytest.fixture(scope="module")
 def db():
     client = pymongo.MongoClient("mongodb://localhost:27017/")
-    database = client["ZTB_DATABASE_MONGO"]
+    database = client["ZTB_Database_Mongo"]
     yield database
     client.close()
 
@@ -1164,7 +1164,7 @@ def test_delete_orders_with_user_lookup(db):
 
 def mongo_tests():
     client = MongoClient('mongodb://localhost:27017/')
-    db = client['ZTB_DATABASE']
+    db = client['ZTB_Database_Mongo']
 
     tests = [
         test_insert_book_genre,
