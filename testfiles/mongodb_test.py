@@ -97,8 +97,7 @@ def test_insert_order_and_return(db):
     user_id = random.randint(1000000, 9999999)
     order_id = random.randint(1000000, 9999999)
     return_id = random.randint(1000000, 9999999)
-    
-    # Insert dependencies
+
     db.publishers.insert_one({
         "publisher_id": pub_id,
         "name": "P",
@@ -160,8 +159,7 @@ def test_insert_book_rating_aggregation(db):
     auth_id = random_code()
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
-    
-    # Insert dependencies
+
     db.users.insert_one({
         "users_id": user_id,
         "location": "X",
@@ -198,16 +196,14 @@ def test_insert_book_rating_aggregation(db):
         "publisher_id": pub_id,
         "author_id": auth_id
     })
-    
-    # Insert ratings
+
     for rating in [3, 4, 5]:
         db.ratings.insert_one({
             "user_id": user_id,
             "isbn": isbn,
             "book_rating": rating
         })
-    
-    # Aggregation equivalent to GROUP BY
+
     pipeline = [
         {"$match": {"isbn": isbn}},
         {"$group": {"_id": "$isbn", "count": {"$sum": 1}}}
@@ -222,7 +218,7 @@ def test_insert_book_rating_with_lookup(db):
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
 
-    # Insert dependencies
+
     db.users.insert_one({
         "users_id": user_id,
         "location": "Y",
@@ -267,7 +263,6 @@ def test_insert_book_rating_with_lookup(db):
         "book_rating": rating
     })
 
-    # MongoDB equivalent of JOIN using aggregation
     pipeline = [
         {"$match": {"user_id": user_id, "isbn": isbn}},
         {"$lookup": {
@@ -296,7 +291,6 @@ def test_get_order_with_book_and_author_lookup(db):
     user_id = random.randint(1000000, 9999999)
     order_id = random.randint(1000000, 9999999)
 
-    # Insert test data
     db.authors.insert_one({
         "author_id": auth_id,
         "author_name": "GA",
@@ -342,7 +336,6 @@ def test_get_order_with_book_and_author_lookup(db):
         "price": 55.5
     })
 
-    # Complex aggregation with multiple lookups (equivalent to multiple JOINs)
     pipeline = [
         {"$match": {"order_id": order_id}},
         {"$lookup": {
@@ -378,7 +371,7 @@ def test_get_average_book_rating_above_aggregation(db):
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
 
-    # Insert dependencies
+
     db.publishers.insert_one({
         "publisher_id": pub_id,
         "name": "P",
@@ -410,7 +403,7 @@ def test_get_average_book_rating_above_aggregation(db):
         "author_id": auth_id
     })
 
-    # Insert ratings with different users
+
     for i, rating in enumerate([3, 5, 4]):
         user_id = random.randint(1000000, 9999999) + i
         db.users.insert_one({
@@ -424,7 +417,6 @@ def test_get_average_book_rating_above_aggregation(db):
             "book_rating": rating
         })
 
-    # Aggregation to find books with average rating > 3.5
     pipeline = [
         {"$group": {
             "_id": "$isbn",
@@ -452,7 +444,7 @@ def test_insert_book_rating_lookup(db):
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
     
-    # Insert dependencies
+
     db.users.insert_one({
         "users_id": user_id,
         "location": "Y",
@@ -496,8 +488,7 @@ def test_insert_book_rating_lookup(db):
         "isbn": isbn,
         "book_rating": rating
     })
-    
-    # MongoDB equivalent of JOIN using aggregation
+
     pipeline = [
         {"$match": {"user_id": user_id, "isbn": isbn}},
         {"$lookup": {
@@ -529,8 +520,7 @@ def test_get_order_with_book_and_author(db):
     genre_id = random.randint(1000000, 9999999)
     user_id = random.randint(1000000, 9999999)
     order_id = random.randint(1000000, 9999999)
-    
-    # Insert test data
+
     db.authors.insert_one({
         "author_id": auth_id,
         "author_name": "GA",
@@ -576,7 +566,7 @@ def test_get_order_with_book_and_author(db):
         "price": 55.5
     })
     
-    # Complex aggregation with multiple lookups (equivalent to multiple JOINs)
+
     pipeline = [
         {"$match": {"order_id": order_id}},
         {"$lookup": {
@@ -611,8 +601,7 @@ def test_get_average_book_rating_above(db):
     auth_id = random_code()
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
-    
-    # Insert dependencies
+
     db.publishers.insert_one({
         "publisher_id": pub_id,
         "name": "P",
@@ -643,8 +632,7 @@ def test_get_average_book_rating_above(db):
         "publisher_id": pub_id,
         "author_id": auth_id
     })
-    
-    # Insert ratings with different users
+
     for i, rating in enumerate([3, 5, 4]):
         user_id = random.randint(1000000, 9999999) + i
         db.users.insert_one({
@@ -657,8 +645,7 @@ def test_get_average_book_rating_above(db):
             "isbn": isbn,
             "book_rating": rating
         })
-    
-    # Aggregation to find books with average rating > 3.5
+
     pipeline = [
         {"$group": {
             "_id": "$isbn",
@@ -698,7 +685,7 @@ def test_get_genre_book_counts_aggregation(db):
         "popularity": 8
     })
     
-    # Insert books for genre 1
+
     for i in range(2):
         db.books.insert_one({
             "isbn": random_isbn(),
@@ -709,7 +696,7 @@ def test_get_genre_book_counts_aggregation(db):
             "author_id": auth_id
         })
     
-    # Insert book for genre 2
+
     db.books.insert_one({
         "isbn": random_isbn(),
         "book_name": "Y",
@@ -718,8 +705,7 @@ def test_get_genre_book_counts_aggregation(db):
         "publisher_id": pub_id,
         "author_id": auth_id
     })
-    
-    # Aggregation equivalent to LEFT JOIN with GROUP BY
+
     pipeline = [
         {"$match": {"id": {"$in": [genre1_id, genre2_id]}}},
         {"$lookup": {
@@ -747,7 +733,7 @@ def test_get_users_and_orders_lookup(db):
     genre_id = random.randint(1000000, 9999999)
     order_id = random.randint(1000000, 9999999)
     
-    # Insert test data
+
     db.users.insert_one({
         "users_id": user_id,
         "location": "JoinLoc",
@@ -1029,8 +1015,7 @@ def test_delete_books_with_few_ratings_aggregation(db):
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
     user_id = random.randint(1000000, 9999999)
-    
-    # Insert test data
+
     db.publishers.insert_one({
         "publisher_id": pub_id,
         "name": "DP",
@@ -1073,21 +1058,18 @@ def test_delete_books_with_few_ratings_aggregation(db):
         "isbn": isbn,
         "book_rating": 5
     })
-    
-    # Find books with fewer than 2 ratings using aggregation
+
     pipeline = [
         {"$group": {"_id": "$isbn", "count": {"$sum": 1}}},
         {"$match": {"count": {"$lt": 2}}}
     ]
     
     books_to_delete = [doc["_id"] for doc in db.ratings.aggregate(pipeline)]
-    
-    # Delete books that have fewer than 2 ratings
+
     if books_to_delete:
         result = db.books.delete_many({"isbn": {"$in": books_to_delete}})
         assert result.deleted_count > 0
-    
-    # Verify the specific book was deleted (since it only has 1 rating)
+
     doc = db.books.find_one({"isbn": isbn})
     assert doc is None
 
@@ -1144,17 +1126,14 @@ def test_delete_orders_with_user_lookup(db):
         "order_date": "2024-01-01",
         "order_cost": 66.6
     })
-    
-    # Find users with specific location
+
     users_to_delete = db.users.find({"location": "DelJoinLoc"})
     user_ids_to_delete = [user["users_id"] for user in users_to_delete]
-    
-    # Delete orders for users with the specific location
+
     if user_ids_to_delete:
         result = db.orders.delete_many({"user_id": {"$in": user_ids_to_delete}})
         assert result.deleted_count > 0
-    
-    # Verify order was deleted
+
     doc = db.orders.find_one({"user_id": user_id})
     assert doc is None
 
@@ -1193,7 +1172,7 @@ def mongo_tests():
             'test_insert_user',
             'test_insert_publisher_and_author',
             'test_insert_order_and_return',
-            'test_insert_book_rating_aggregation'
+            'test_insert_book_rating_aggregation',
             'test_insert_book_rating_with_lookup'
         ],
         'READ': [
@@ -1216,12 +1195,10 @@ def mongo_tests():
         ]
     }
 
-    data_sizes = [100, 1000, 10000, 100000]
+    data_sizes = [500000]
     runs_per_test = 5
 
     print(f"Znaleziono {len(tests)} testów MongoDB")
-    print(f"Każdy test będzie uruchomiony {runs_per_test} razy dla każdego z {len(data_sizes)} rozmiarów danych")
-    print(f"Rozmiary danych: {data_sizes}")
 
     total_start = time.time()
     crud_results = {}
@@ -1243,7 +1220,6 @@ def mongo_tests():
         for test in tests:
             times = []
             status = "OK"
-
             for run in range(runs_per_test):
                 start = time.time()
                 try:
@@ -1262,6 +1238,7 @@ def mongo_tests():
                 min_time = min(times)
                 max_time = max(times)
                 print(f"{test.__name__:35} → {status:10} {avg_time:.4f}s (śr.) [{min_time:.4f}s - {max_time:.4f}s]")
+
                 test_name = test.__name__
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
@@ -1270,37 +1247,21 @@ def mongo_tests():
             else:
                 print(f"{test.__name__:35} → {status:10} (test nie przeszedł)")
 
-        print(f"\n{'-' * 40}")
-        print(f"PODSUMOWANIE SUM CZASÓW CRUD DLA ROZMIARU {data_size}")
-        print(f"{'-' * 40}")
-        for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
-            times = crud_results[data_size][crud_op]
-            if times:
-                sum_crud_time = sum(times)
-                count = len(times)
-                print(f"{crud_op:8} → {sum_crud_time:.4f}s (suma {count} średnich testów)")
-            else:
-                print(f"{crud_op:8} → Brak udanych testów")
-
         cleanup_mongo_test_data(db)
 
-    print(f"\n{'=' * 80}")
-    print(f"SUMY CZASÓW CRUD MONGODB DLA WSZYSTKICH ROZMIARÓW DANYCH")
-    print(f"{'=' * 80}")
-    print(f"{'Rozmiar':<10} {'CREATE':<18} {'READ':<18} {'UPDATE':<18} {'DELETE':<18}")
-    print(f"{'-' * 10} {'-' * 18} {'-' * 18} {'-' * 18} {'-' * 18}")
+    final_results = {}
     for data_size in data_sizes:
-        row = f"{data_size:<10}"
+        final_results[data_size] = {}
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
-                sum_time = sum(times)
-                row += f" {sum_time:<17.4f}s"
+                final_results[data_size][crud_op] = sum(times)
             else:
-                row += f" {'N/A':<18}"
-        print(row)
+                final_results[data_size][crud_op] = 0.0
 
     client.close()
+
+    return final_results
 
 
 def prepare_mongo_test_data(db, size):
@@ -1308,7 +1269,6 @@ def prepare_mongo_test_data(db, size):
         cleanup_mongo_test_data(db)
         print(f"Przygotowywanie {size} rekordów danych testowych MongoDB...")
 
-        # Prepare genres
         genres_data = []
         for i in range(20):
             genre_data = {
@@ -1319,7 +1279,6 @@ def prepare_mongo_test_data(db, size):
             genres_data.append(genre_data)
         db.genres.insert_many(genres_data)
 
-        # Prepare publishers
         publishers_data = []
         for i in range(50):
             publisher_data = {
@@ -1333,7 +1292,6 @@ def prepare_mongo_test_data(db, size):
             publishers_data.append(publisher_data)
         db.publishers.insert_many(publishers_data)
 
-        # Prepare authors
         authors_data = []
         for i in range(100):
             author_data = {
@@ -1345,12 +1303,10 @@ def prepare_mongo_test_data(db, size):
             authors_data.append(author_data)
         db.authors.insert_many(authors_data)
 
-        # Get inserted IDs
         genre_ids = [doc["id"] for doc in db.genres.find({"genre": {"$regex": "^TestGenre_"}})]
         publisher_ids = [doc["publisher_id"] for doc in db.publishers.find({"name": {"$regex": "^TestPublisher_"}})]
         author_ids = [doc["author_id"] for doc in db.authors.find({"author_name": {"$regex": "^TestAuthor_"}})]
 
-        # Prepare users
         users_data = []
         for i in range(size):
             user_data = {
@@ -1359,14 +1315,12 @@ def prepare_mongo_test_data(db, size):
                 "age": str(18 + (i % 62))
             }
             users_data.append(user_data)
-        
-        # Insert users in batches to avoid memory issues
+
         batch_size = 1000
         for i in range(0, len(users_data), batch_size):
             batch = users_data[i:i + batch_size]
             db.users.insert_many(batch)
 
-        # Prepare books
         books_data = []
         for i in range(size):
             book_data = {
@@ -1378,8 +1332,7 @@ def prepare_mongo_test_data(db, size):
                 "author_id": author_ids[i % len(author_ids)]
             }
             books_data.append(book_data)
-        
-        # Insert books in batches
+
         for i in range(0, len(books_data), batch_size):
             batch = books_data[i:i + batch_size]
             db.books.insert_many(batch)
@@ -1405,7 +1358,6 @@ def prepare_mongo_test_data(db, size):
                 try:
                     db.ratings.insert_many(batch, ordered=False)
                 except Exception:
-                    # Ignore duplicate key errors
                     pass
 
         # Prepare orders
@@ -1421,7 +1373,6 @@ def prepare_mongo_test_data(db, size):
             orders_data.append(order_data)
         
         if orders_data:
-            # Insert orders in batches
             for i in range(0, len(orders_data), batch_size):
                 batch = orders_data[i:i + batch_size]
                 db.orders.insert_many(batch)
@@ -1434,7 +1385,6 @@ def prepare_mongo_test_data(db, size):
 
 def cleanup_mongo_test_data(db):
     try:
-        # Delete test data from all collections
         db.orders.delete_many({"user_id": {"$gte": 2000000}})
         db.ratings.delete_many({"user_id": {"$gte": 2000000}})
         db.books.delete_many({"book_name": {"$regex": "^TestBook_"}})
@@ -1448,7 +1398,6 @@ def cleanup_mongo_test_data(db):
 
 
 def get_any_mongo(db, collection_name, field_name):
-    """Helper function to get any document field from MongoDB collection"""
     doc = db[collection_name].find_one()
     if doc and field_name in doc:
         return doc[field_name]

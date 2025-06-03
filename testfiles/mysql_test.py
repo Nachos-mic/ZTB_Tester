@@ -533,19 +533,18 @@ def mysql_tests():
         ]
     }
 
-    data_sizes = [100, 1000, 10000, 100000]
+    data_sizes = [500000]
     runs_per_test = 5
 
-    print(f"Znaleziono {len(tests)} testów w {__file__!r}")
+    print(f"Znaleziono {len(tests)} testów MySQL")
     print(f"Każdy test będzie uruchomiony {runs_per_test} razy dla każdego z {len(data_sizes)} rozmiarów danych")
-    print(f"Rozmiary danych: {data_sizes}")
 
     total_start = time.time()
     crud_results = {}
 
     for data_size in data_sizes:
         print(f"\n{'=' * 60}")
-        print(f"TESTY DLA ROZMIARU DANYCH: {data_size}")
+        print(f"TESTY MYSQL DLA ROZMIARU DANYCH: {data_size}")
         print(f"{'=' * 60}")
 
         crud_results[data_size] = {
@@ -560,7 +559,6 @@ def mysql_tests():
         for test in tests:
             times = []
             status = "OK"
-
             for run in range(runs_per_test):
                 start = time.time()
                 try:
@@ -579,6 +577,7 @@ def mysql_tests():
                 min_time = min(times)
                 max_time = max(times)
                 print(f"{test.__name__:35} → {status:10} {avg_time:.4f}s (śr.) [{min_time:.4f}s - {max_time:.4f}s]")
+
                 test_name = test.__name__
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
@@ -601,25 +600,19 @@ def mysql_tests():
 
         cleanup_test_data(conn)
 
-    print(f"\n{'=' * 80}")
-    print(f"SUMY CZASÓW CRUD DLA WSZYSTKICH ROZMIARÓW DANYCH")
-    print(f"{'=' * 80}")
-    print(f"{'Rozmiar':<10} {'CREATE':<18} {'READ':<18} {'UPDATE':<18} {'DELETE':<18}")
-    print(f"{'-' * 10} {'-' * 18} {'-' * 18} {'-' * 18} {'-' * 18}")
+    final_results = {}
     for data_size in data_sizes:
-        row = f"{data_size:<10}"
+        final_results[data_size] = {}
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
-                sum_time = sum(times)
-                row += f" {sum_time:<17.4f}s"
+                final_results[data_size][crud_op] = sum(times)
             else:
-                row += f" {'N/A':<18}"
-        print(row)
+                final_results[data_size][crud_op] = 0.0
 
-    # total_duration = time.time() - total_start
-    # print(f"\n⏰ Całkowity czas wszystkich testów: {total_duration:.4f}s")
     conn.close()
+
+    return final_results
 
 
 def prepare_test_data(conn, size):

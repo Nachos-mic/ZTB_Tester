@@ -840,6 +840,7 @@ def dynamo_tests():
         aws_access_key_id='test',
         aws_secret_access_key='test'
     )
+
     tests = [
         test_insert_book_genre,
         test_insert_user,
@@ -860,6 +861,7 @@ def dynamo_tests():
         test_delete_books_with_few_ratings_group_by,
         test_delete_orders_with_user_join,
     ]
+
     crud_categories = {
         'CREATE': [
             'test_insert_book_genre',
@@ -888,24 +890,29 @@ def dynamo_tests():
             'test_delete_orders_with_user_join'
         ]
     }
-    data_sizes = [100, 1000, 10000, 100000]
+
+    data_sizes = [500000]
     runs_per_test = 5
+
     print(f"Znaleziono {len(tests)} testów DynamoDB")
-    print(f"Każdy test będzie uruchomiony {runs_per_test} razy dla każdego z {len(data_sizes)} rozmiarów danych")
-    print(f"Rozmiary danych: {data_sizes}")
+
     total_start = time.time()
     crud_results = {}
+
     for data_size in data_sizes:
         print(f"\n{'=' * 60}")
         print(f"TESTY DYNAMODB DLA ROZMIARU DANYCH: {data_size}")
         print(f"{'=' * 60}")
+
         crud_results[data_size] = {
             'CREATE': [],
             'READ': [],
             'UPDATE': [],
             'DELETE': []
         }
+
         prepare_dynamo_test_data(dynamodb, data_size)
+
         for test in tests:
             times = []
             status = "OK"
@@ -921,11 +928,13 @@ def dynamo_tests():
                 except Exception as e:
                     status = f"ERROR ({e.__class__.__name__})"
                     break
+
             if times:
                 avg_time = sum(times) / len(times)
                 min_time = min(times)
                 max_time = max(times)
                 print(f"{test.__name__:35} → {status:10} {avg_time:.4f}s (śr.) [{min_time:.4f}s - {max_time:.4f}s]")
+
                 test_name = test.__name__
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
@@ -933,35 +942,22 @@ def dynamo_tests():
                         break
             else:
                 print(f"{test.__name__:35} → {status:10} (test nie przeszedł)")
-        print(f"\n{'-' * 40}")
-        print(f"PODSUMOWANIE SUM CZASÓW CRUD DLA ROZMIARU {data_size}")
-        print(f"{'-' * 40}")
-        for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
-            times = crud_results[data_size][crud_op]
-            if times:
-                sum_crud_time = sum(times)
-                count = len(times)
-                print(f"{crud_op:8} → {sum_crud_time:.4f}s (suma {count} średnich testów)")
-            else:
-                print(f"{crud_op:8} → Brak udanych testów")
+
         cleanup_dynamo_test_data(dynamodb)
-    print(f"\n{'=' * 80}")
-    print(f"SUMY CZASÓW CRUD DLA WSZYSTKICH ROZMIARÓW DANYCH")
-    print(f"{'=' * 80}")
-    print(f"{'Rozmiar':<10} {'CREATE':<18} {'READ':<18} {'UPDATE':<18} {'DELETE':<18}")
-    print(f"{'-' * 10} {'-' * 18} {'-' * 18} {'-' * 18} {'-' * 18}")
+
+
+    final_results = {}
     for data_size in data_sizes:
-        row = f"{data_size:<10}"
+        final_results[data_size] = {}
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
-                sum_time = sum(times)
-                row += f" {sum_time:<17.4f}s"
+                final_results[data_size][crud_op] = sum(times)
             else:
-                row += f" {'N/A':<18}"
-        print(row)
-    total_duration = time.time() - total_start
-    print(f"\n⏰ Całkowity czas wszystkich testów: {total_duration:.4f}s")
+                final_results[data_size][crud_op] = 0.0
+
+
+    return final_results
 
 def prepare_dynamo_test_data(db, size):
     batch_size = 1000
