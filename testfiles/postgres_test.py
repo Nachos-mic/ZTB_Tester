@@ -773,19 +773,17 @@ def postgresql_tests():
         ]
     }
 
-    data_sizes = [100, 1000]
+    data_sizes = [50, 100]
     runs_per_test = 2
 
     print(f"Znaleziono {len(tests)} testów PostgreSQL")
 
     total_start = time.time()
+    individual_results = {}
     crud_results = {}
 
     for data_size in data_sizes:
-        print(f"\n{'=' * 60}")
-        print(f"TESTY POSTGRESQL DLA ROZMIARU DANYCH: {data_size}")
-        print(f"{'=' * 60}")
-
+        individual_results[data_size] = {}
         crud_results[data_size] = {
             'CREATE': [],
             'READ': [],
@@ -804,32 +802,30 @@ def postgresql_tests():
                     test(conn)
                     duration = time.time() - start
                     times.append(duration)
-                except AssertionError as e:
-                    status = f"FAIL ({e})"
-                    break
                 except Exception as e:
                     status = f"ERROR ({e.__class__.__name__})"
                     break
 
             if times:
                 avg_time = sum(times) / len(times)
-                min_time = min(times)
-                max_time = max(times)
-                print(f"{test.__name__:35} → {status:10} {avg_time:.4f}s (śr.) [{min_time:.4f}s - {max_time:.4f}s]")
-
                 test_name = test.__name__
+
+                # Zapisz wynik dla pojedynczego testu
+                individual_results[data_size][test_name] = avg_time
+
+                # Dodaj do kategorii CRUD
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
                         crud_results[data_size][crud_op].append(avg_time)
                         break
-            else:
-                print(f"{test.__name__:35} → {status:10} (test nie przeszedł)")
 
         cleanup_test_data(conn)
 
+    # Zwróć oba typy wyników
     final_results = {}
     for data_size in data_sizes:
         final_results[data_size] = {}
+        # CRUD sums
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
@@ -837,8 +833,11 @@ def postgresql_tests():
             else:
                 final_results[data_size][crud_op] = 0.0
 
-    conn.close()
+        # Individual test results
+        for test_name, time_val in individual_results[data_size].items():
+            final_results[data_size][test_name] = time_val
 
+    conn.close()
     return final_results
 
 

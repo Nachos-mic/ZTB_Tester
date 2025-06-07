@@ -164,33 +164,41 @@ class DatabaseBenchmarkVisualizer:
         for db_name, db_data in self.results.items():
             for size, ops in db_data.items():
                 for operation, time_val in ops.items():
-                    data_for_heatmap.append({
-                        'Database': db_name,
-                        'Data_Size': size,
-                        'Operation': operation,
-                        'Time': time_val
-                    })
+                    if operation in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
+                        data_for_heatmap.append({
+                            'Database': db_name,
+                            'Operation': operation,
+                            'Time': time_val
+                        })
 
         if not data_for_heatmap:
             print("Brak danych do utworzenia mapy cieplnej")
             return
 
         df = pd.DataFrame(data_for_heatmap)
-        pivot_table = df.pivot_table(values='Time', index=['Database', 'Data_Size'],
-                                     columns='Operation', fill_value=0)
 
-        fig, ax = plt.subplots(figsize=(12, 8))
+        aggregated_df = df.groupby(['Database', 'Operation'])['Time'].mean().reset_index()
+
+        pivot_table = aggregated_df.pivot_table(
+            values='Time',
+            index='Database',
+            columns='Operation',
+            fill_value=0
+        )
+
+        fig, ax = plt.subplots(figsize=(10, 6))
         sns.heatmap(pivot_table, annot=True, fmt='.4f', cmap='YlOrRd',
-                    cbar_kws={'label': 'Czas wykonania (s)'}, ax=ax)
+                    cbar_kws={'label': 'Średni czas wykonania (s)'}, ax=ax)
 
-        ax.set_title('Mapa cieplna wydajności baz danych', fontsize=16, fontweight='bold')
-        ax.set_xlabel('Operacje', fontweight='bold')
-        ax.set_ylabel('Baza danych i rozmiar danych', fontweight='bold')
+        ax.set_title('Mapa cieplna wydajności - średnie czasy operacji CRUD',
+                     fontsize=16, fontweight='bold')
+        ax.set_xlabel('Typ operacji', fontweight='bold')
+        ax.set_ylabel('Baza danych', fontweight='bold')
 
         plt.xticks(rotation=0)
         plt.yticks(rotation=0)
         plt.tight_layout()
-        plt.savefig('performance_heatmap.png', dpi=300, bbox_inches='tight')
+        plt.savefig('performance_heatmap_by_operation.png', dpi=300, bbox_inches='tight')
         plt.show()
 
     def create_comparative_radar_chart(self):
@@ -353,9 +361,10 @@ class DatabaseBenchmarkVisualizer:
 
             test_times = []
 
-            for size_data in db_data.values():
+            for size, size_data in db_data.items():
                 if actual_test_name in size_data:
-                    test_times.append(size_data[actual_test_name])
+                    if actual_test_name not in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
+                        test_times.append(size_data[actual_test_name])
 
             if test_times:
                 db_averages[db_name] = {
@@ -407,15 +416,6 @@ class DatabaseBenchmarkVisualizer:
         plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
         ax.grid(True, alpha=0.3, axis='y')
 
-        info_text = f'Porównanie średnich czasów dla testu: {test_name}\n'
-        info_text += f'Liczba baz danych: {len(db_names)}'
-
-        ax.text(0.02, 0.98, info_text,
-                transform=ax.transAxes,
-                fontsize=9,
-                verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
-
         plt.tight_layout()
 
         safe_filename = "".join(c for c in test_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
@@ -436,8 +436,26 @@ class DatabaseBenchmarkVisualizer:
             else:
                 print("  ❌ Brak danych")
 
+    def debug_individual_tests(self):
+        print("\n=== DEBUGOWANIE POSZCZEGÓLNYCH TESTÓW ===")
+        for db_name, db_data in self.results.items():
+            print(f"\n📊 {db_name}:")
+            if db_data:
+                for size, size_data in db_data.items():
+                    print(f"  📈 Dataset {size}:")
+                    individual_tests = [key for key in size_data.keys()
+                                        if key not in ['CREATE', 'READ', 'UPDATE', 'DELETE']]
+                    if individual_tests:
+                        for test_name in sorted(individual_tests):
+                            print(f"    ✅ {test_name}: {size_data[test_name]:.4f}s")
+                    else:
+                        print("    ❌ Brak danych poszczególnych testów")
+            else:
+                print("  ❌ Brak danych")
+
     def generate_all_charts(self):
         self.debug_available_tests()
+        self.debug_individual_tests()
 
         print("Tworzenie wykresów wydajności dla każdego rozmiaru danych...")
         self.create_performance_overview_by_dataset()

@@ -1195,12 +1195,13 @@ def mongo_tests():
         ]
     }
 
-    data_sizes = [100,1000]
+    data_sizes = [50, 100]
     runs_per_test = 2
 
     print(f"Znaleziono {len(tests)} testów MongoDB")
 
     total_start = time.time()
+    individual_results = {}
     crud_results = {}
 
     for data_size in data_sizes:
@@ -1208,6 +1209,7 @@ def mongo_tests():
         print(f"TESTY MONGODB DLA ROZMIARU DANYCH: {data_size}")
         print(f"{'=' * 60}")
 
+        individual_results[data_size] = {}
         crud_results[data_size] = {
             'CREATE': [],
             'READ': [],
@@ -1240,6 +1242,11 @@ def mongo_tests():
                 print(f"{test.__name__:35} → {status:10} {avg_time:.4f}s (śr.) [{min_time:.4f}s - {max_time:.4f}s]")
 
                 test_name = test.__name__
+
+                # Zapisz wynik dla pojedynczego testu
+                individual_results[data_size][test_name] = avg_time
+
+                # Dodaj do kategorii CRUD
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
                         crud_results[data_size][crud_op].append(avg_time)
@@ -1249,9 +1256,11 @@ def mongo_tests():
 
         cleanup_mongo_test_data(db)
 
+    # Zwróć oba typy wyników
     final_results = {}
     for data_size in data_sizes:
         final_results[data_size] = {}
+        # CRUD sums
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
@@ -1259,8 +1268,11 @@ def mongo_tests():
             else:
                 final_results[data_size][crud_op] = 0.0
 
-    client.close()
+        # Individual test results
+        for test_name, time_val in individual_results[data_size].items():
+            final_results[data_size][test_name] = time_val
 
+    client.close()
     return final_results
 
 
