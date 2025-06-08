@@ -1195,8 +1195,8 @@ def mongo_tests():
         ]
     }
 
-    data_sizes = [50, 100]
-    runs_per_test = 2
+    data_sizes = [500000]
+    runs_per_test = 5
 
     print(f"Znaleziono {len(tests)} testów MongoDB")
 
@@ -1256,7 +1256,6 @@ def mongo_tests():
 
         cleanup_mongo_test_data(db)
 
-    # Zwróć oba typy wyników
     final_results = {}
     for data_size in data_sizes:
         final_results[data_size] = {}

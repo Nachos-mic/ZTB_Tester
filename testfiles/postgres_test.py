@@ -773,8 +773,8 @@ def postgresql_tests():
         ]
     }
 
-    data_sizes = [50, 100]
-    runs_per_test = 2
+    data_sizes = [500000]
+    runs_per_test = 5
 
     print(f"Znaleziono {len(tests)} testów PostgreSQL")
 

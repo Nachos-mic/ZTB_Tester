@@ -340,77 +340,58 @@ class DatabaseBenchmarkVisualizer:
             }
         }
 
-        print(f"Tworzenie wykresów dla {len(test_names)} testów...")
+        # Pobierz dostępne rozmiary danych
+        data_sizes = set()
+        for db_data in self.results.values():
+            if db_data:
+                data_sizes.update(db_data.keys())
+        data_sizes = sorted(list(data_sizes))
 
+        print(f"Tworzenie wykresów dla {len(test_names)} testów i {len(data_sizes)} rozmiarów danych...")
+
+        # Generuj wykresy dla każdego testu i każdego rozmiaru danych
         for test_name in test_names:
-            print(f"Tworzenie wykresu dla: {test_name}")
-            self._create_single_test_average_chart(test_name, test_mapping)
+            for data_size in data_sizes:
+                print(f"Tworzenie wykresu dla: {test_name} (rozmiar {data_size})")
+                self._create_single_test_chart_by_size(test_name, data_size, test_mapping)
 
-    def _create_single_test_average_chart(self, test_name, test_mapping):
-        fig, ax = plt.subplots(figsize=(12, 8))
+    def _create_single_test_chart_by_size(self, test_name, data_size, test_mapping):
+        fig, ax = plt.subplots(figsize=(10, 6))
 
-        db_averages = {}
+        db_names = []
+        test_times = []
+        colors = []
 
         for db_name, db_data in self.results.items():
-            if not db_data:
+            if not db_data or data_size not in db_data:
                 continue
 
             actual_test_name = test_name
             if test_name in test_mapping and db_name in test_mapping[test_name]:
                 actual_test_name = test_mapping[test_name][db_name]
 
-            test_times = []
+            size_data = db_data[data_size]
 
-            for size, size_data in db_data.items():
-                if actual_test_name in size_data:
-                    if actual_test_name not in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
-                        test_times.append(size_data[actual_test_name])
+            if actual_test_name in size_data:
+                if actual_test_name not in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
+                    db_names.append(db_name)
+                    test_times.append(size_data[actual_test_name])
+                    colors.append(self.colors.get(db_name, f'C{len(colors)}'))
 
-            if test_times:
-                db_averages[db_name] = {
-                    'mean': np.mean(test_times),
-                    'std': np.std(test_times) if len(test_times) > 1 else 0,
-                    'count': len(test_times)
-                }
-
-        if not db_averages:
-            print(f"⚠️ Brak danych dla testu: {test_name}")
+        if not db_names:
+            print(f"⚠️ Brak danych dla testu: {test_name} (rozmiar {data_size})")
             plt.close(fig)
             return
 
-        db_names = list(db_averages.keys())
-        means = [db_averages[db]['mean'] for db in db_names]
-        stds = [db_averages[db]['std'] for db in db_names]
+        bars = ax.bar(db_names, test_times, color=colors, alpha=0.8)
 
-        bars = ax.bar(db_names, means,
-                      yerr=stds,
-                      capsize=5,
-                      color=[self.colors.get(db, f'C{i}') for i, db in enumerate(db_names)],
-                      alpha=0.8,
-                      error_kw={'linewidth': 2, 'capthick': 2})
-
-        for bar, mean_val, std_val, db_name in zip(bars, means, stds, db_names):
+        for bar, time_val in zip(bars, test_times):
             height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height + height * 0.01,
+                    f'{time_val:.4f}s', ha='center', va='bottom', fontweight='bold')
 
-            if std_val > 0:
-                text = f'{mean_val:.3f}s\n±{std_val:.3f}'
-            else:
-                text = f'{mean_val:.3f}s'
-
-            ax.text(bar.get_x() + bar.get_width() / 2.,
-                    height + std_val + height * 0.02,
-                    text,
-                    ha='center', va='bottom',
-                    fontweight='bold', fontsize=10)
-
-            ax.text(bar.get_x() + bar.get_width() / 2.,
-                    height * 0.05,
-                    f'n={db_averages[db_name]["count"]}',
-                    ha='center', va='bottom',
-                    fontsize=8, color='white', fontweight='bold')
-
-        ax.set_ylabel('Średni czas wykonania (s)', fontweight='bold', fontsize=12)
-        ax.set_title(f'Średnie czasy wykonania - Test: {test_name}',
+        ax.set_ylabel('Czas wykonania (s)', fontweight='bold', fontsize=12)
+        ax.set_title(f'{test_name}\nRozmiar danych: {data_size:,}',
                      fontweight='bold', fontsize=14)
         ax.set_yscale('log')
         plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
@@ -421,8 +402,8 @@ class DatabaseBenchmarkVisualizer:
         safe_filename = "".join(c for c in test_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
         safe_filename = safe_filename.replace(' ', '_').lower()
 
-        plt.savefig(f'test_average_{safe_filename}.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.savefig(f'test_{safe_filename}_size_{data_size}.png', dpi=300, bbox_inches='tight')
+        plt.close(fig)
 
     def debug_available_tests(self):
         print("\n=== DEBUGOWANIE DOSTĘPNYCH TESTÓW ===")
@@ -488,32 +469,43 @@ class DatabaseBenchmarkVisualizer:
                 print(f"\n🔹 {db_name}:")
                 for size, ops in db_data.items():
                     if isinstance(ops, dict) and ops:
-                        avg_time = np.mean(list(ops.values()))
-                        print(f"  Rozmiar {size:,}: średni czas {avg_time:.4f}s")
-                        for op, time_val in ops.items():
-                            print(f"    {op}: {time_val:.4f}s")
+                        crud_ops = {k: v for k, v in ops.items() if k in ['CREATE', 'READ', 'UPDATE', 'DELETE']}
+                        if crud_ops:
+                            avg_time = np.mean(list(crud_ops.values()))
+                            print(f"  Rozmiar {size:,}: średni czas {avg_time:.4f}s")
+                            for op, time_val in crud_ops.items():
+                                print(f"    {op}: {time_val:.4f}s")
 
         test_names = [
             'test_insert_book_genre', 'test_insert_user', 'test_insert_publisher_and_author',
             'test_insert_order_and_return', 'test_insert_book_rating_group_by', 'test_insert_book_rating_join',
             'test_get_order_with_book_and_author', 'test_get_average_book_rating_above',
-            'test_get_genre_book_counts_group_by',
-            'test_get_users_and_orders_join', 'test_update_genre_popularity', 'test_update_user_location',
-            'test_update_genre_popularity_group_by', 'test_update_user_with_order_join', 'test_delete_genre_by_id',
-            'test_delete_user_by_id', 'test_delete_books_with_few_ratings_group_by', 'test_delete_orders_with_user_join'
+            'test_get_genre_book_counts_group_by', 'test_get_users_and_orders_join',
+            'test_update_genre_popularity', 'test_update_user_location',
+            'test_update_genre_popularity_group_by', 'test_update_user_with_order_join',
+            'test_delete_genre_by_id', 'test_delete_user_by_id',
+            'test_delete_books_with_few_ratings_group_by', 'test_delete_orders_with_user_join'
         ]
 
         charts = []
-        data_sizes = list(next(iter(self.results.values())).keys()) if self.results else []
+
+        data_sizes = set()
+        for db_data in self.results.values():
+            if db_data:
+                data_sizes.update(db_data.keys())
+        data_sizes = sorted(list(data_sizes))
 
         for size in data_sizes:
             charts.append(f"performance_overview_{size}.png")
 
+        # Wykresy dla każdego testu i każdego rozmiaru danych
         for test_name in test_names:
             safe_filename = "".join(c for c in test_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
             safe_filename = safe_filename.replace(' ', '_').lower()
-            charts.append(f"test_average_{safe_filename}.png")
+            for size in data_sizes:
+                charts.append(f"test_{safe_filename}_size_{size}.png")
 
+        # Pozostałe wykresy
         charts.extend([
             "scalability_analysis.png",
             "performance_heatmap.png",

@@ -892,8 +892,8 @@ def dynamo_tests():
         ]
     }
 
-    data_sizes = [50, 100]
-    runs_per_test = 2
+    data_sizes = [500000]
+    runs_per_test = 5
 
     print(f"Znaleziono {len(tests)} testów DynamoDB")
 
@@ -953,7 +953,6 @@ def dynamo_tests():
 
         cleanup_dynamo_test_data(dynamodb)
 
-    # Zwróć oba typy wyników
     final_results = {}
     for data_size in data_sizes:
         final_results[data_size] = {}
