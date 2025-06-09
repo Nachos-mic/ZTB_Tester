@@ -571,10 +571,8 @@ def mysql_tests():
                 avg_time = sum(times) / len(times)
                 test_name = test.__name__
 
-                # Zapisz wynik dla pojedynczego testu
                 individual_results[data_size][test_name] = avg_time
 
-                # Dodaj do kategorii CRUD
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
                         crud_results[data_size][crud_op].append(avg_time)
@@ -582,11 +580,9 @@ def mysql_tests():
 
         cleanup_test_data(conn)
 
-    # Zwróć oba typy wyników
     final_results = {}
     for data_size in data_sizes:
         final_results[data_size] = {}
-        # CRUD sums
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
@@ -594,7 +590,6 @@ def mysql_tests():
             else:
                 final_results[data_size][crud_op] = 0.0
 
-        # Individual test results
         for test_name, time_val in individual_results[data_size].items():
             final_results[data_size][test_name] = time_val
 

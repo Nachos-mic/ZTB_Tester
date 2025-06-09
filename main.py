@@ -349,7 +349,6 @@ class DatabaseBenchmarkVisualizer:
 
         print(f"Tworzenie wykresów dla {len(test_names)} testów i {len(data_sizes)} rozmiarów danych...")
 
-        # Generuj wykresy dla każdego testu i każdego rozmiaru danych
         for test_name in test_names:
             for data_size in data_sizes:
                 print(f"Tworzenie wykresu dla: {test_name} (rozmiar {data_size})")
@@ -498,14 +497,12 @@ class DatabaseBenchmarkVisualizer:
         for size in data_sizes:
             charts.append(f"performance_overview_{size}.png")
 
-        # Wykresy dla każdego testu i każdego rozmiaru danych
         for test_name in test_names:
             safe_filename = "".join(c for c in test_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
             safe_filename = safe_filename.replace(' ', '_').lower()
             for size in data_sizes:
                 charts.append(f"test_{safe_filename}_size_{size}.png")
 
-        # Pozostałe wykresy
         charts.extend([
             "scalability_analysis.png",
             "performance_heatmap.png",
@@ -519,7 +516,7 @@ class DatabaseBenchmarkVisualizer:
 
 
 def main():
-    print("🚀 System analizy wydajności baz danych")
+    print("Tester wydajności baz danych")
     print("=" * 50)
 
     visualizer = DatabaseBenchmarkVisualizer()
@@ -532,7 +529,7 @@ def main():
             print("⚠️ Brak danych - uruchamianie testów...")
             visualizer.run_all_tests()
         else:
-            print("📈 Generowanie wykresów z załadowanych danych...")
+            print("Generowanie wykresów z załadowanych danych...")
             visualizer.generate_all_charts()
 
         print(f"\n✅ Analiza zakończona pomyślnie!")

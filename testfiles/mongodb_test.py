@@ -778,8 +778,7 @@ def test_get_users_and_orders_lookup(db):
         "order_date": datetime.now().strftime("%Y-%m-%d"),
         "price": 88.8
     })
-    
-    # Aggregation equivalent to JOIN
+
     pipeline = [
         {"$match": {"users_id": user_id}},
         {"$lookup": {
@@ -804,7 +803,6 @@ def get_any_publisher_id(db):
     doc = db.publishers.find_one()
     if doc:
         return doc["publisher_id"]
-    # Create one if none exists
     pub_id = random_code()
     db.publishers.insert_one({
         "publisher_id": pub_id,
@@ -820,7 +818,6 @@ def get_any_author_id(db):
     doc = db.authors.find_one()
     if doc:
         return doc["author_id"]
-    # Create one if none exists
     auth_id = random_code()
     db.authors.insert_one({
         "author_id": auth_id,
@@ -879,8 +876,7 @@ def test_update_genre_popularity_aggregation(db):
         "genre": "UGG",
         "popularity": 1
     })
-    
-    # Insert multiple books with same genre
+
     for i in range(2):
         db.books.insert_one({
             "isbn": random_isbn(),
@@ -890,8 +886,7 @@ def test_update_genre_popularity_aggregation(db):
             "publisher_id": pub_id,
             "author_id": auth_id
         })
-    
-    # Find genres with more than 1 book using aggregation
+
     pipeline = [
         {"$group": {"_id": "$genre_id", "count": {"$sum": 1}}},
         {"$match": {"count": {"$gt": 1}}}
@@ -916,8 +911,7 @@ def test_update_user_with_order_lookup(db):
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
     order_id = random.randint(1000000, 9999999)
-    
-    # Insert test data
+
     db.users.insert_one({
         "users_id": user_id,
         "location": "OldJoinLoc",
@@ -964,8 +958,7 @@ def test_update_user_with_order_lookup(db):
     })
     
     new_loc = f"JoinLoc-{random_suffix()}"
-    
-    # Find users who have orders and update their location
+
     users_with_orders = db.orders.distinct("user_id")
     if user_id in users_with_orders:
         result = db.users.update_one(
@@ -1080,8 +1073,7 @@ def test_delete_orders_with_user_lookup(db):
     isbn = random_isbn()
     genre_id = random.randint(1000000, 9999999)
     order_id = random.randint(1000000, 9999999)
-    
-    # Insert test data
+
     db.users.insert_one({
         "users_id": user_id,
         "location": "DelJoinLoc",
@@ -1237,16 +1229,11 @@ def mongo_tests():
 
             if times:
                 avg_time = sum(times) / len(times)
-                min_time = min(times)
-                max_time = max(times)
-                print(f"{test.__name__:35} → {status:10} {avg_time:.4f}s (śr.) [{min_time:.4f}s - {max_time:.4f}s]")
 
                 test_name = test.__name__
 
-                # Zapisz wynik dla pojedynczego testu
                 individual_results[data_size][test_name] = avg_time
 
-                # Dodaj do kategorii CRUD
                 for crud_op, test_names in crud_categories.items():
                     if test_name in test_names:
                         crud_results[data_size][crud_op].append(avg_time)
@@ -1259,7 +1246,6 @@ def mongo_tests():
     final_results = {}
     for data_size in data_sizes:
         final_results[data_size] = {}
-        # CRUD sums
         for crud_op in ['CREATE', 'READ', 'UPDATE', 'DELETE']:
             times = crud_results[data_size][crud_op]
             if times:
@@ -1267,7 +1253,6 @@ def mongo_tests():
             else:
                 final_results[data_size][crud_op] = 0.0
 
-        # Individual test results
         for test_name, time_val in individual_results[data_size].items():
             final_results[data_size][test_name] = time_val
 
@@ -1348,11 +1333,9 @@ def prepare_mongo_test_data(db, size):
             batch = books_data[i:i + batch_size]
             db.books.insert_many(batch)
 
-        # Get user and book data for relations
         user_ids = [doc["users_id"] for doc in db.users.find({"location": {"$regex": "^TestCity_"}})]
         book_isbns = [doc["isbn"] for doc in db.books.find({"book_name": {"$regex": "^TestBook_"}})]
 
-        # Prepare ratings
         ratings_data = []
         for i in range(min(size, len(user_ids) * len(book_isbns) // 10)):
             rating_data = {
@@ -1363,7 +1346,6 @@ def prepare_mongo_test_data(db, size):
             ratings_data.append(rating_data)
         
         if ratings_data:
-            # Insert ratings in batches
             for i in range(0, len(ratings_data), batch_size):
                 batch = ratings_data[i:i + batch_size]
                 try:
@@ -1371,7 +1353,6 @@ def prepare_mongo_test_data(db, size):
                 except Exception:
                     pass
 
-        # Prepare orders
         orders_data = []
         for i in range(size // 2):
             order_data = {
