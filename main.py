@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import time
-import json
-from pathlib import Path
 from datetime import datetime
 import warnings
 
@@ -34,30 +32,6 @@ class DatabaseBenchmarkVisualizer:
             'UPDATE': '#F18F01',
             'DELETE': '#C73E1D'
         }
-
-    def load_results(self):
-        results_files = {
-            'MySQL': 'mysql_benchmark_results.json',
-            'PostgreSQL': 'postgresql_benchmark_results.json',
-            'MongoDB': 'mongodb_benchmark_results.json',
-            'DynamoDB': 'dynamodb_benchmark_results.json'
-        }
-
-        self.results = {}
-
-        for db_name, filename in results_files.items():
-            try:
-                if Path(filename).exists():
-                    with open(filename, 'r') as f:
-                        data = json.load(f)
-                        self.results[db_name] = data
-                        print(f"✅ Załadowano wyniki dla {db_name}: {len(data)} rozmiarów danych")
-                else:
-                    print(f"⚠️ Nie znaleziono pliku: {filename}")
-                    self.results[db_name] = {}
-            except Exception as e:
-                print(f"❌ Błąd ładowania {filename}: {e}")
-                self.results[db_name] = {}
 
     def run_all_tests(self):
         print("🚀 Rozpoczynanie testów wydajności baz danych...")
@@ -522,15 +496,9 @@ def main():
     visualizer = DatabaseBenchmarkVisualizer()
 
     try:
-        print("📂 Ładowanie wyników z plików JSON...")
-        visualizer.load_results()
 
-        if not any(visualizer.results.values()):
-            print("⚠️ Brak danych - uruchamianie testów...")
-            visualizer.run_all_tests()
-        else:
-            print("Generowanie wykresów z załadowanych danych...")
-            visualizer.generate_all_charts()
+        print("Uruchamianie testów...")
+        visualizer.run_all_tests()
 
         print(f"\n✅ Analiza zakończona pomyślnie!")
         print(f"🕒 Czas: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
